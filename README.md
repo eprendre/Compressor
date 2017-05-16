@@ -60,7 +60,7 @@ Compressor.getDefault(this)
 1. RxJava 1 to RxJava 2
 2. I don't care about the orientation of source image, so `setMaxWidth()` and `setMaxHeight()` are replaced by 
 `setMaxSize()`. For example: with `setMaxSize(720)`, an image of `1920x1080` or `1080x1920` will be compressed to 
-`1280x720` or `720x1080`.
+`1280x720` or `720x1280`.
 
 License
 -------
