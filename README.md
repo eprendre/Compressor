@@ -14,7 +14,7 @@ Compressor is a lightweight and powerful android image compression library. Comp
     }
     
     dependencies {
-        compile 'com.github.eprendre:Compressor:v1.0.6'
+        compile 'com.github.eprendre:Compressor:v1.0.7'
     }
 ```
 # Let's compress the image size!
