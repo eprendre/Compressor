@@ -43,14 +43,15 @@ Compressor.getDefault(this)
         .compressToFileAsObservable(actualImage)
         .subscribeOn(Schedulers.io())
         .observeOn(AndroidSchedulers.mainThread())
-        .subscribe(new Action1<File>() {
+        .subscribe(new Consumer<File>() {
             @Override
-            public void call(File file) {
+            public void accept(File file) {
                 compressedImage = file;
+                setCompressedImage();
             }
-        }, new Action1<Throwable>() {
+        }, new Consumer<Throwable>() {
             @Override
-            public void call(Throwable throwable) {
+            public void accept(Throwable throwable) {
                 showError(throwable.getMessage());
             }
         });
