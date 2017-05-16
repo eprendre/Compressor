@@ -102,7 +102,8 @@ class ImageUtil {
         Bitmap scaledBitmap = null;
 
         Matrix matrix = new Matrix();
-        matrix.postScale(compressRatio, compressRatio);
+        float actualRatio = Math.max(maxSize / bmp.getWidth(), maxSize / bmp.getHeight());
+        matrix.postScale(actualRatio, actualRatio);
 
         //check the rotation of the image and display it properly
         ExifInterface exif;
