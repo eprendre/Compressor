@@ -3,9 +3,7 @@ package id.zelory.compressor;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.graphics.Canvas;
 import android.graphics.Matrix;
-import android.graphics.Paint;
 import android.media.ExifInterface;
 import android.net.Uri;
 import android.text.TextUtils;
@@ -31,9 +29,8 @@ class ImageUtil {
 
     }
 
-    static Bitmap getScaledBitmap(Context context, Uri imageUri, float maxWidth, float maxHeight, Bitmap.Config bitmapConfig) {
+    static Bitmap getScaledBitmap(Context context, Uri imageUri, float maxSize, Bitmap.Config bitmapConfig) {
         String filePath = FileUtil.getRealPathFromURI(context, imageUri);
-        Bitmap scaledBitmap = null;
 
         BitmapFactory.Options options = new BitmapFactory.Options();
 
@@ -42,15 +39,13 @@ class ImageUtil {
         options.inJustDecodeBounds = true;
         Bitmap bmp = BitmapFactory.decodeFile(filePath, options);
         if (bmp == null) {
-
             InputStream inputStream = null;
             try {
                 inputStream = new FileInputStream(filePath);
                 BitmapFactory.decodeStream(inputStream, null, options);
                 inputStream.close();
-            } catch (FileNotFoundException exception) {
-                exception.printStackTrace();
-            } catch (IOException exception) {
+            }
+            catch (IOException exception) {
                 exception.printStackTrace();
             }
         }
@@ -64,27 +59,18 @@ class ImageUtil {
             actualHeight = bitmap2.getHeight();
         }
 
-        float imgRatio = (float) actualWidth / actualHeight;
-        float maxRatio = maxWidth / maxHeight;
-
-        //width and height values are set maintaining the aspect ratio of the image
-        if (actualHeight > maxHeight || actualWidth > maxWidth) {
-            if (imgRatio < maxRatio) {
-                imgRatio = maxHeight / actualHeight;
-                actualWidth = (int) (imgRatio * actualWidth);
-                actualHeight = (int) maxHeight;
-            } else if (imgRatio > maxRatio) {
-                imgRatio = maxWidth / actualWidth;
-                actualHeight = (int) (imgRatio * actualHeight);
-                actualWidth = (int) maxWidth;
-            } else {
-                actualHeight = (int) maxHeight;
-                actualWidth = (int) maxWidth;
-            }
+        int actualSize = Math.min(actualHeight, actualWidth);
+        if (actualSize < maxSize) {
+            maxSize = actualSize;
         }
 
+        float compressRatio = maxSize / actualSize;
+
+        int compressWidth = (int) (compressRatio * actualWidth);
+        int compressHeight = (int) (compressRatio * actualHeight);
+
         //setting inSampleSize value allows to load a scaled down version of the original image
-        options.inSampleSize = calculateInSampleSize(options, actualWidth, actualHeight);
+        options.inSampleSize = calculateInSampleSize(options, compressWidth, compressHeight);
 
         //inJustDecodeBounds set to false to load the actual bitmap
         options.inJustDecodeBounds = false;
@@ -102,57 +88,45 @@ class ImageUtil {
                 InputStream inputStream = null;
                 try {
                     inputStream = new FileInputStream(filePath);
-                    BitmapFactory.decodeStream(inputStream, null, options);
+                    bmp = BitmapFactory.decodeStream(inputStream, null, options);
                     inputStream.close();
-                } catch (FileNotFoundException exception) {
-                    exception.printStackTrace();
-                } catch (IOException exception) {
+                }
+                catch (IOException exception) {
                     exception.printStackTrace();
                 }
             }
-        } catch (OutOfMemoryError exception) {
+        }
+        catch (OutOfMemoryError exception) {
             exception.printStackTrace();
         }
-        try {
-            scaledBitmap = Bitmap.createBitmap(actualWidth, actualHeight, bitmapConfig);
-        } catch (OutOfMemoryError exception) {
-            exception.printStackTrace();
-        }
+        Bitmap scaledBitmap = null;
 
-        float ratioX = actualWidth / (float) options.outWidth;
-        float ratioY = actualHeight / (float) options.outHeight;
-
-        Matrix scaleMatrix = new Matrix();
-        scaleMatrix.setScale(ratioX, ratioY, 0, 0);
-
-        Canvas canvas = new Canvas(scaledBitmap);
-        canvas.setMatrix(scaleMatrix);
-        canvas.drawBitmap(bmp, 0, 0, new Paint(Paint.FILTER_BITMAP_FLAG));
+        Matrix matrix = new Matrix();
+        matrix.postScale(compressRatio, compressRatio);
 
         //check the rotation of the image and display it properly
         ExifInterface exif;
         try {
             exif = new ExifInterface(filePath);
             int orientation = exif.getAttributeInt(ExifInterface.TAG_ORIENTATION, 0);
-            Matrix matrix = new Matrix();
-            if (orientation == 6) {
+            if (orientation == ExifInterface.ORIENTATION_ROTATE_90) {
                 matrix.postRotate(90);
-            } else if (orientation == 3) {
+            } else if (orientation == ExifInterface.ORIENTATION_ROTATE_180) {
                 matrix.postRotate(180);
-            } else if (orientation == 8) {
+            } else if (orientation == ExifInterface.ORIENTATION_ROTATE_270) {
                 matrix.postRotate(270);
             }
-            scaledBitmap = Bitmap.createBitmap(scaledBitmap, 0, 0,
-                                               scaledBitmap.getWidth(), scaledBitmap.getHeight(),
-                                               matrix, true);
-        } catch (IOException e) {
+            scaledBitmap = Bitmap.createBitmap(bmp, 0, 0,
+                    bmp.getWidth(), bmp.getHeight(), matrix, true);
+        }
+        catch (IOException e) {
             e.printStackTrace();
         }
 
         return scaledBitmap;
     }
 
-    static File compressImage(Context context, Uri imageUri, float maxWidth, float maxHeight,
+    static File compressImage(Context context, Uri imageUri, float maxSize,
                               Bitmap.CompressFormat compressFormat, Bitmap.Config bitmapConfig,
                               int quality, String parentPath, String prefix, String fileName) {
         FileOutputStream out = null;
@@ -161,16 +135,19 @@ class ImageUtil {
             out = new FileOutputStream(filename);
 
             //write the compressed bitmap at the destination specified by filename.
-            ImageUtil.getScaledBitmap(context, imageUri, maxWidth, maxHeight, bitmapConfig).compress(compressFormat, quality, out);
+            ImageUtil.getScaledBitmap(context, imageUri, maxSize, bitmapConfig).compress(compressFormat, quality, out);
 
-        } catch (FileNotFoundException e) {
+        }
+        catch (FileNotFoundException e) {
             e.printStackTrace();
-        } finally {
+        }
+        finally {
             try {
                 if (out != null) {
                     out.close();
                 }
-            } catch (IOException ignored) {
+            }
+            catch (IOException ignored) {
             }
         }
 

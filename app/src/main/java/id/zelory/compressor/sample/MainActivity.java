@@ -20,19 +20,19 @@ import java.util.Random;
 
 import id.zelory.compressor.Compressor;
 import id.zelory.compressor.FileUtil;
-import rx.android.schedulers.AndroidSchedulers;
-import rx.functions.Action1;
-import rx.schedulers.Schedulers;
+import io.reactivex.android.schedulers.AndroidSchedulers;
+import io.reactivex.functions.Consumer;
+import io.reactivex.schedulers.Schedulers;
 
 public class MainActivity extends AppCompatActivity {
     private static final int PICK_IMAGE_REQUEST = 1;
 
     private ImageView actualImageView;
     private ImageView compressedImageView;
-    private TextView actualSizeTextView;
-    private TextView compressedSizeTextView;
-    private File actualImage;
-    private File compressedImage;
+    private TextView  actualSizeTextView;
+    private TextView  compressedSizeTextView;
+    private File      actualImage;
+    private File      compressedImage;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -70,15 +70,15 @@ public class MainActivity extends AppCompatActivity {
                     .compressToFileAsObservable(actualImage)
                     .subscribeOn(Schedulers.io())
                     .observeOn(AndroidSchedulers.mainThread())
-                    .subscribe(new Action1<File>() {
+                    .subscribe(new Consumer<File>() {
                         @Override
-                        public void call(File file) {
+                        public void accept(File file) {
                             compressedImage = file;
                             setCompressedImage();
                         }
-                    }, new Action1<Throwable>() {
+                    }, new Consumer<Throwable>() {
                         @Override
-                        public void call(Throwable throwable) {
+                        public void accept(Throwable throwable) {
                             showError(throwable.getMessage());
                         }
                     });
@@ -90,41 +90,39 @@ public class MainActivity extends AppCompatActivity {
             showError("Please choose an image!");
         } else {
             // Compress image in main thread using custom Compressor
-            compressedImage = new Compressor.Builder(this)
-                    .setMaxWidth(640)
-                    .setMaxHeight(480)
-                    .setQuality(75)
-                    .setCompressFormat(Bitmap.CompressFormat.WEBP)
-                    .setDestinationDirectoryPath(Environment.getExternalStoragePublicDirectory(
-                            Environment.DIRECTORY_PICTURES).getAbsolutePath())
-                    .build()
-                    .compressToFile(actualImage);
-            setCompressedImage();
+//            compressedImage = new Compressor.Builder(this)
+//                    .setMaxSize(720)
+//                    .setQuality(75)
+//                    .setCompressFormat(Bitmap.CompressFormat.WEBP)
+//                    .setDestinationDirectoryPath(Environment.getExternalStoragePublicDirectory(
+//                            Environment.DIRECTORY_PICTURES).getAbsolutePath())
+//                    .build()
+//                    .compressToFile(actualImage);
+//            setCompressedImage();
 
             // Compress image using RxJava in background thread with custom Compressor
-           /* new Compressor.Builder(this)
-                    .setMaxWidth(640)
-                    .setMaxHeight(480)
-                    .setQuality(75)
-                    .setCompressFormat(Bitmap.CompressFormat.WEBP)
+            new Compressor.Builder(this)
+                    .setMaxSize(720)
+                    .setQuality(90)
+                    .setCompressFormat(Bitmap.CompressFormat.JPEG)
                     .setDestinationDirectoryPath(Environment.getExternalStoragePublicDirectory(
                             Environment.DIRECTORY_PICTURES).getAbsolutePath())
                     .build()
                     .compressToFileAsObservable(actualImage)
                     .subscribeOn(Schedulers.io())
                     .observeOn(AndroidSchedulers.mainThread())
-                    .subscribe(new Action1<File>() {
+                    .subscribe(new Consumer<File>() {
                         @Override
-                        public void call(File file) {
+                        public void accept(File file) {
                             compressedImage = file;
                             setCompressedImage();
                         }
-                    }, new Action1<Throwable>() {
+                    }, new Consumer<Throwable>() {
                         @Override
-                        public void call(Throwable throwable) {
+                        public void accept(Throwable throwable) {
                             showError(throwable.getMessage());
                         }
-                    });*/
+                    });
         }
     }
 
@@ -156,7 +154,8 @@ public class MainActivity extends AppCompatActivity {
                 actualImageView.setImageBitmap(BitmapFactory.decodeFile(actualImage.getAbsolutePath()));
                 actualSizeTextView.setText(String.format("Size : %s", getReadableFileSize(actualImage.length())));
                 clearImage();
-            } catch (IOException e) {
+            }
+            catch (IOException e) {
                 showError("Failed to read picture data!");
                 e.printStackTrace();
             }

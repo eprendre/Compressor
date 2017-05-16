@@ -5,9 +5,10 @@ import android.graphics.Bitmap;
 import android.net.Uri;
 
 import java.io.File;
+import java.util.concurrent.Callable;
 
-import rx.Observable;
-import rx.functions.Func0;
+import io.reactivex.Observable;
+import io.reactivex.ObservableSource;
 
 /**
  * Created on : June 18, 2016
@@ -20,12 +21,13 @@ import rx.functions.Func0;
 public class Compressor {
     private static volatile Compressor INSTANCE;
     private Context context;
-    //max width and height values of the compressed image is taken as 612x816
-    private float maxWidth = 612.0f;
-    private float maxHeight = 816.0f;
+//    max width and height values of the compressed image is taken as 612x816
+//    private float maxWidth = 612.0f;
+//    private float maxHeight = 816.0f;
+    private float maxSize = 720f;
     private Bitmap.CompressFormat compressFormat = Bitmap.CompressFormat.JPEG;
     private Bitmap.Config bitmapConfig = Bitmap.Config.ARGB_8888;
-    private int quality = 80;
+    private int quality = 90;
     private String destinationDirectoryPath;
     private String fileNamePrefix;
     private String fileName;
@@ -48,28 +50,28 @@ public class Compressor {
     }
 
     public File compressToFile(File file) {
-        return ImageUtil.compressImage(context, Uri.fromFile(file), maxWidth, maxHeight,
+        return ImageUtil.compressImage(context, Uri.fromFile(file), maxSize,
             compressFormat, bitmapConfig, quality, destinationDirectoryPath,
             fileNamePrefix, fileName);
     }
 
     public Bitmap compressToBitmap(File file) {
-        return ImageUtil.getScaledBitmap(context, Uri.fromFile(file), maxWidth, maxHeight, bitmapConfig);
+        return ImageUtil.getScaledBitmap(context, Uri.fromFile(file), maxSize, bitmapConfig);
     }
 
     public Observable<File> compressToFileAsObservable(final File file) {
-        return Observable.defer(new Func0<Observable<File>>() {
+        return Observable.defer(new Callable<ObservableSource<? extends File>>() {
             @Override
-            public Observable<File> call() {
+            public ObservableSource<? extends File> call() throws Exception {
                 return Observable.just(compressToFile(file));
             }
         });
     }
 
     public Observable<Bitmap> compressToBitmapAsObservable(final File file) {
-        return Observable.defer(new Func0<Observable<Bitmap>>() {
+        return Observable.defer(new Callable<ObservableSource<? extends Bitmap>>() {
             @Override
-            public Observable<Bitmap> call() {
+            public ObservableSource<? extends Bitmap> call() throws Exception {
                 return Observable.just(compressToBitmap(file));
             }
         });
@@ -82,13 +84,8 @@ public class Compressor {
             compressor = new Compressor(context);
         }
 
-        public Builder setMaxWidth(float maxWidth) {
-            compressor.maxWidth = maxWidth;
-            return this;
-        }
-
-        public Builder setMaxHeight(float maxHeight) {
-            compressor.maxHeight = maxHeight;
+        public Builder setMaxSize(float maxSize) {
+            compressor.maxSize = maxSize;
             return this;
         }
 
