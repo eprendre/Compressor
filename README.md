@@ -6,9 +6,16 @@ Compressor is a lightweight and powerful android image compression library. Comp
 
 # Gradle
 ```groovy
-dependencies {
-    compile 'id.zelory:compressor:1.0.4'
-}
+    allprojects {
+        repositories {
+            ...
+            maven { url 'https://jitpack.io' }
+        }
+    }
+    
+    dependencies {
+        compile 'com.github.eprendre:Compressor:v1.0.6'
+    }
 ```
 # Let's compress the image size!
 #### Compress Image File
@@ -22,8 +29,7 @@ compressedImageBitmap = Compressor.getDefault(this).compressToBitmap(actualImage
 ### I want custom Compressor!
 ```java
 compressedImage = new Compressor.Builder(this)
-            .setMaxWidth(640)
-            .setMaxHeight(480)
+            .setMaxSize(720)
             .setQuality(75)
             .setCompressFormat(Bitmap.CompressFormat.WEBP)
             .setDestinationDirectoryPath(Environment.getExternalStoragePublicDirectory(
@@ -49,6 +55,11 @@ Compressor.getDefault(this)
             }
         });
 ```
+### What's different in my fork
+1. RxJava 1 to RxJava 2
+2. I don't care about the orientation of source image, so `setMaxWidth()` and `setMaxHeight()` are replaced by 
+`setMaxSize()`. For example: with `setMaxSize(720)`, an image of `1920x1080` or `1080x1920` will be compressed to 
+`1280x720` or `720x1080`.
 
 License
 -------
